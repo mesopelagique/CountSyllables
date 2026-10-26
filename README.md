@@ -4,6 +4,8 @@
 word split into syllable chips (ba · na · ne) that pop in one by one; tap **how many syllables**
 there are. Built on [Hero](https://github.com/mesopelagique/Hero) (`cs.hero`).
 
+<p align="center"><img src="Documentation/countsyllables.gif" width="320" alt="CountSyllables — a word's syllable chips (ba·na·ne) or the whole word; tap how many syllables" /></p>
+
 ## Play
 
 Open the project — `On Startup` launches it. Count the syllable chips, tap the right number.
