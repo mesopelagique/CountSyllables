@@ -44,6 +44,8 @@ property words : Collection:=[\
 property chipsMax : Integer:=4
 
 property level : Text:="easy"              // easy = 1–2 syllables, normal = all
+property wordMode : Text:="split"           // "split" = syllable chips · "whole" = one block
+property curWord : Object                    // the word currently shown
 property count : Integer                    // the true number of syllables
 property choices : Collection               // the numbers on the buttons
 property score : Integer:=0
@@ -56,6 +58,7 @@ Class constructor($transition : cs.hero.ElementTransition)
 	OBJECT SET VISIBLE(*; "glyph"; False)
 	OBJECT SET VISIBLE(*; "truth"; False)
 	This._highlightLevel(1)
+	This._highlightWordMode(1)
 	This.newQuestion()
 
 	// === === === === === === === === === === === === === === === === === === === ===
@@ -68,6 +71,18 @@ Function selectLevel($i : Integer)
 	End if
 	This._highlightLevel($i)
 	This.newQuestion()
+
+	// === === === === === === === === === === === === === === === === === === === ===
+	// Word display: 1 = Séparé (syllable chips, easier) · 2 = Collé (one block, harder)
+Function selectWordMode($i : Integer)
+
+	If ($i=1)
+		This.wordMode:="split"
+	Else
+		This.wordMode:="whole"
+	End if
+	This._highlightWordMode($i)
+	This._renderChips()
 
 	// === === === === === === === === === === === === === === === === === === === ===
 Function toggleSound()
@@ -83,6 +98,7 @@ Function toggleSound()
 Function newQuestion()
 
 	var $w : Object:=This._pickWord()
+	This.curWord:=$w
 	This.count:=$w.syls.length
 
 	// number choices: the true count plus two nearby ones
@@ -103,7 +119,7 @@ Function newQuestion()
 	This.choices:=This._shuffle($opts)
 
 	OBJECT SET TITLE(*; "emoji"; $w.emoji)
-	This._renderChips($w.syls)
+	This._renderChips()
 	This._renderChoices()
 
 	OBJECT SET TITLE(*; "score"; String(This.score))
@@ -166,22 +182,46 @@ Function _pickWord() : Object
 	End for each
 	return $pool[(Random % $pool.length)]
 
-	// Lay the syllable chips centred and pop them in one by one (a visual clap).
-Function _renderChips($syls : Collection)
+	// Show the word: either split into syllable chips that pop in one by one (easier),
+	// or as one whole block the child must segment themselves (harder).
+Function _renderChips()
+
+	var $syls : Collection:=This.curWord.syls
+	var $y : Integer:=(64+240)
+	var $cw; $x : Integer
+
+	If (This.wordMode="whole")
+
+		$cw:=224
+		$x:=190-($cw\2)
+		var $fs : Integer:=This._wordFont(Length(This.curWord.word))
+		OBJECT SET COORDINATES(*; "chip_1"; $x; $y; $x+$cw; $y+44)
+		OBJECT SET COORDINATES(*; "chipLbl_1"; $x; $y; $x+$cw; $y+44)
+		OBJECT SET TITLE(*; "chipLbl_1"; This.curWord.word)
+		OBJECT SET VISIBLE(*; "chip_1"; True)
+		OBJECT SET VISIBLE(*; "chipLbl_1"; True)
+		This.transition.animate("chipLbl_1").from({fontSize: 10}).to({fontSize: $fs}).duration(280).easing("easeOutBack").start()
+		var $j : Integer
+		For ($j; 2; This.chipsMax)
+			OBJECT SET VISIBLE(*; "chip_"+String($j); False)
+			OBJECT SET VISIBLE(*; "chipLbl_"+String($j); False)
+		End for
+		return
+
+	End if
 
 	var $n : Integer:=$syls.length
-	var $cw : Integer:=56
+	$cw:=56
 	var $gap : Integer:=8
 	var $total : Integer:=($n*$cw)+(($n-1)*$gap)
 	var $startx : Integer:=190-($total\2)
-	var $y : Integer:=(64+240)
 
 	var $k : Integer
 	For ($k; 1; This.chipsMax)
 		var $pad : Text:="chip_"+String($k)
 		var $lbl : Text:="chipLbl_"+String($k)
 		If ($k<=$n)
-			var $x : Integer:=$startx+(($k-1)*($cw+$gap))
+			$x:=$startx+(($k-1)*($cw+$gap))
 			OBJECT SET COORDINATES(*; $pad; $x; $y; $x+$cw; $y+44)
 			OBJECT SET COORDINATES(*; $lbl; $x; $y; $x+$cw; $y+44)
 			OBJECT SET TITLE(*; $lbl; $syls[($k-1)])
@@ -194,6 +234,20 @@ Function _renderChips($syls : Collection)
 			OBJECT SET VISIBLE(*; $lbl; False)
 		End if
 	End for
+
+	// --------------------------------------------------------------------------------
+Function _wordFont($n : Integer) : Integer
+
+	Case of
+		: ($n<=4)
+			return 30
+		: ($n<=6)
+			return 26
+		: ($n<=8)
+			return 22
+		Else
+			return 18
+	End case
 
 	// three number pads in a row, centred at y=388 (card-relative)
 Function _renderChoices()
@@ -268,5 +322,18 @@ Function _highlightLevel($sel : Integer)
 		Else
 			OBJECT SET RGB COLORS(*; "lvlPad_"+String($i); 0x00E4E7EC; 0x00E4E7EC)
 			OBJECT SET RGB COLORS(*; "lvlLbl_"+String($i); 0x00667085; 0x00E4E7EC)
+		End if
+	End for
+
+Function _highlightWordMode($sel : Integer)
+
+	var $i : Integer
+	For ($i; 1; 2)
+		If ($i=$sel)
+			OBJECT SET RGB COLORS(*; "wmPad_"+String($i); 0x00344054; 0x00344054)
+			OBJECT SET RGB COLORS(*; "wmLbl_"+String($i); 0x00FFFFFF; 0x00344054)
+		Else
+			OBJECT SET RGB COLORS(*; "wmPad_"+String($i); 0x00E4E7EC; 0x00E4E7EC)
+			OBJECT SET RGB COLORS(*; "wmLbl_"+String($i); 0x00667085; 0x00E4E7EC)
 		End if
 	End for

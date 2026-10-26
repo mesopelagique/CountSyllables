@@ -23,6 +23,8 @@ Case of
 				Form.game.choose(Num(Substring($name; 8)))
 			: (Position("lvlBtn_"; $name)=1)
 				Form.game.selectLevel(Num(Substring($name; 8)))
+			: (Position("wmBtn_"; $name)=1)
+				Form.game.selectWordMode(Num(Substring($name; 7)))
 			: ($name="btnSpeaker")
 				Form.game.toggleSound()
 		End case
